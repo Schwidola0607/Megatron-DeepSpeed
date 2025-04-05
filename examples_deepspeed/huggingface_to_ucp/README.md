@@ -58,11 +58,10 @@ python ${HOME}/DeepSpeed/deepspeed/checkpoint/hf_to_universal.py \
 ## Step 4: Resume training with Universal checkpoint
 Follow [Step 3 in Universal Checkpointing guide](https://github.com/deepspeedai/Megatron-DeepSpeed/tree/main/examples_deepspeed/universal_checkpointing#step-3-resume-training-with-universal-checkpoint-of-iteration-100)
 
-Note that the flag `IGNORE_MISSING_OPTIM_LOWER` is set to `true` to ignore the missing optimizer state in the Universal Checkpoint.
 
 For example, run the following command:
 ```bash
-ZERO_STAGE=3 DP=4 LOAD_DP=4 IGNORE_MISSING_OPTIM_LOWER=true bash examples_deepspeed/universal_checkpointing/megatron_gpt/run_universal_bf16.sh
+ZERO_STAGE=3 DP=4 LOAD_DP=4 bash examples_deepspeed/universal_checkpointing/megatron_gpt/run_universal_bf16.sh
 ```
 
 ### TensorBoard Log Analysis

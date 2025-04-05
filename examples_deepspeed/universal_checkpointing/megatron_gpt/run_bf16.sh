@@ -13,12 +13,12 @@ script_path=$(realpath $0)
 script_dir=$(dirname $script_path)
 CONFIG_JSON="$script_dir/ds_config.json"
 
-# Check if ZERO_STAGE is set, default to 1 if not
-ZERO_STAGE=${ZERO_STAGE:-1}
+# Check if ZERO_STAGE is set, default to 0 if not
+ZERO_STAGE=${ZERO_STAGE:-0}
 
 # Validate ZERO_STAGE
-if [[ ! $ZERO_STAGE =~ ^[1-3]$ ]]; then
-    echo "Error: ZERO_STAGE must be 1, 2, or 3"
+if [[ ! $ZERO_STAGE =~ ^[0-3]$ ]]; then
+    echo "Error: ZERO_STAGE must be 0, 1, 2, or 3"
     exit 1
 fi
 
@@ -31,13 +31,13 @@ if [[ $DEBUG_MODE == 1 ]]; then
         LAYERS=4
         HIDDEN=512
         SEQ=512
-        SIZE_TAG="toy"
+        SIZE_TAG="gpt-117m"
 else
+        LAYERS=48
         HIDDEN=1024
-        LAYERS=24
         SEQ=1024
-        SIZE_TAG="big"
-fi  
+        SIZE_TAG="gpt-1.5b"
+fi  # Add this missing 'fi' to close the if statement
 
 # 3D parallelism of training 
 TP=${TP:-1}  
@@ -65,6 +65,9 @@ LOAD_CHECKPOINT_PATH=${EXP_DIR}/checkpoints/gpt2/z${ZERO_STAGE}/$DTYPE/tp${LOAD_
 LOG_DIR="${EXP_DIR}/tensorboard/$DTYPE/tp${TP}_pp${PP}_dp${DP}_sp${SP}_hd${HIDDEN}_nl${LAYERS}_gbsz${GLOBAL_BATCH}_mbsz${MICRO_BATCH}_z${ZERO_STAGE}_LR_${LR}_${MIN_LR}_${DTYPE}_${SIZE_TAG}_${RUN_TAG}"
 mkdir -p $LOG_DIR
 
+# Define log file with timestamp and configuration details
+MEGATRON_LOG_FILE="${LOG_DIR}/megatron_${DATETIME}_tp${TP}_pp${PP}_dp${DP}_sp${SP}_gbsz${GLOBAL_BATCH}_mbsz${MICRO_BATCH}_z${ZERO_STAGE}_${DTYPE}_${SIZE_TAG}.log"
+
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -89,7 +92,7 @@ options=" \
 	--ds-sequence-parallel-size $SP \
         --num-layers $LAYERS \
         --hidden-size $HIDDEN \
-        --num-attention-heads 32 \
+        --num-attention-heads 16 \
         --seq-length $SEQ \
         --loss-scale 12 \
         --max-position-embeddings $SEQ \
@@ -100,6 +103,7 @@ options=" \
 	--min-lr $MIN_LR \
         --lr-decay-style cosine \
         --log-interval 1 \
+        --log-memory-to-tensorboard \
         --eval-iters 40 \
         --eval-interval 10 \
 	--data-path ${DATASET} \
@@ -155,8 +159,9 @@ cat <<EOT > $CONFIG_JSON
 EOT
 
 WORKER_STR="--num_nodes 1 --num_gpus $WORLD_SIZE"
-run_cmd="deepspeed --master_port 29700 $WORKER_STR ${DIR}/pretrain_gpt.py $@ ${options}"
+run_cmd="deepspeed --master_port 29700 $WORKER_STR ${DIR}/pretrain_gpt.py $@ ${options} 2>&1 | tee ${MEGATRON_LOG_FILE}"
 
+echo "Logging output to: ${MEGATRON_LOG_FILE}"
 echo ${options}
 echo ${run_cmd}
 eval ${run_cmd}

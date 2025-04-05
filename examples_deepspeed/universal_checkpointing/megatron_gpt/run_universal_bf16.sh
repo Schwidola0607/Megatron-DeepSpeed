@@ -13,16 +13,9 @@ script_path=$(realpath $0)
 script_dir=$(dirname $script_path)
 CONFIG_JSON="$script_dir/ds_config.json"
 
-# Check if ZERO_STAGE is set, default to 1 if not
-ZERO_STAGE=${ZERO_STAGE:-1}
-IGNORE_MISSING_OPTIM=${IGNORE_MISSING_OPTIM:-false}
-
-# Convert string to lowercase to handle different cases (TRUE, True, true, etc)
-IGNORE_MISSING_OPTIM_LOWER=$(echo "$IGNORE_MISSING_OPTIM" | tr '[:upper:]' '[:lower:]')
-
-# Validate ZERO_STAGE
-if [[ ! $ZERO_STAGE =~ ^[1-3]$ ]]; then
-    echo "Error: ZERO_STAGE must be 1, 2, or 3"
+ZERO_STAGE=${ZERO_STAGE:-0}
+if [[ ! $ZERO_STAGE =~ ^[0-3]$ ]]; then
+    echo "Error: ZERO_STAGE must be 0, 1, 2, or 3"
     exit 1
 fi
 
@@ -137,7 +130,8 @@ options="${options} \
     --no-pipeline-parallel"
 fi
 
-if [[ $IGNORE_MISSING_OPTIM_LOWER == "true" ]]; then
+NO_LOAD_RNG=${NO_LOAD_RNG:-"false"}
+if [[ $NO_LOAD_RNG == "true" ]]; then
     options="${options} \
         --no-load-rng \
         --resume-iteration=100"
@@ -151,7 +145,6 @@ cat <<EOT > $CONFIG_JSON
 
   "zero_optimization": {
     "stage": $ZERO_STAGE,
-    "ignore_missing_optim_state": $([ "$IGNORE_MISSING_OPTIM_LOWER" = "true" ] && echo "true" || echo "false")
   },
 
   "bf16": {

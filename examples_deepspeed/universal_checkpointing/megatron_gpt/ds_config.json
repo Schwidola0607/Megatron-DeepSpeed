@@ -1,11 +1,10 @@
 {
-  "train_batch_size" : 16,
-  "train_micro_batch_size_per_gpu": 4,
+  "train_batch_size" : 8,
+  "train_micro_batch_size_per_gpu": 2,
   "steps_per_print": 1,
 
   "zero_optimization": {
-    "stage": 3,
-    "ignore_missing_optim_state": true
+    "stage": 0
   },
 
   "bf16": {
