@@ -130,11 +130,10 @@ options="${options} \
     --no-pipeline-parallel"
 fi
 
-NO_LOAD_RNG=${NO_LOAD_RNG:-"false"}
-if [[ $NO_LOAD_RNG == "true" ]]; then
-    options="${options} \
-        --no-load-rng \
-        --resume-iteration=100"
+# Control memory logging with environment variable (default to on)
+LOG_MEMORY=${LOG_MEMORY:-0}
+if [[ $LOG_MEMORY == 1 ]]; then
+    options="${options} --log-memory-to-tensorboard"
 fi
 
 cat <<EOT > $CONFIG_JSON

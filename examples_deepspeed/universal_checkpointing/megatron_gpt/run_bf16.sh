@@ -92,7 +92,7 @@ options=" \
 	--ds-sequence-parallel-size $SP \
         --num-layers $LAYERS \
         --hidden-size $HIDDEN \
-        --num-attention-heads 16 \
+        --num-attention-heads 32 \
         --seq-length $SEQ \
         --loss-scale 12 \
         --max-position-embeddings $SEQ \
@@ -103,7 +103,6 @@ options=" \
 	--min-lr $MIN_LR \
         --lr-decay-style cosine \
         --log-interval 1 \
-        --log-memory-to-tensorboard \
         --eval-iters 40 \
         --eval-interval 10 \
 	--data-path ${DATASET} \
@@ -134,6 +133,12 @@ options="${options} \
 if [[ ${ZERO_STAGE} -gt 1 ]]; then
 options="${options} \
     --no-pipeline-parallel"
+fi
+
+# Control memory logging with environment variable (default to on)
+LOG_MEMORY=${LOG_MEMORY:-0}
+if [[ $LOG_MEMORY == 1 ]]; then
+    options="${options} --log-memory-to-tensorboard"
 fi
 
 cat <<EOT > $CONFIG_JSON
