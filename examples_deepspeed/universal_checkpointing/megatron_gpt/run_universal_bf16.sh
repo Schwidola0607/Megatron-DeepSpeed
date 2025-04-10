@@ -20,7 +20,7 @@ if [[ ! $ZERO_STAGE =~ ^[0-3]$ ]]; then
 fi
 
 DTYPE="bf16"
-EXIT_INTERVAL=200
+EXIT_INTERVAL=100
 
 # Debug
 DEBUG_MODE=${DEBUG_MODE:-0}
@@ -30,8 +30,8 @@ if [[ $DEBUG_MODE == 1 ]]; then
         SEQ=512
         SIZE_TAG="toy"
 else
+        LAYERS=48
         HIDDEN=1024
-        LAYERS=24
         SEQ=1024
         SIZE_TAG="big"
 fi  
@@ -61,6 +61,8 @@ CHECKPOINT_PATH=${EXP_DIR}/checkpoints/gpt2/z${ZERO_STAGE}/$DTYPE/tp${TP}_pp${PP
 LOAD_CHECKPOINT_PATH=${EXP_DIR}/checkpoints/gpt2/z${ZERO_STAGE}/$DTYPE/tp${LOAD_TP}_pp${LOAD_PP}_dp${LOAD_DP}_sp${LOAD_SP}_mb${LOAD_MICRO_BATCH}_${SIZE_TAG}
 LOG_DIR="${EXP_DIR}/tensorboard/$DTYPE/tp${TP}_pp${PP}_dp${DP}_sp${SP}_hd${HIDDEN}_nl${LAYERS}_gbsz${GLOBAL_BATCH}_mbsz${MICRO_BATCH}_z${ZERO_STAGE}_LR_${LR}_${MIN_LR}_${DTYPE}_${SIZE_TAG}_${RUN_TAG}"
 mkdir -p $LOG_DIR
+
+MEGATRON_LOG_FILE="${LOG_DIR}/megatron_universal_${DATETIME}_tp${TP}_pp${PP}_dp${DP}_sp${SP}_gbsz${GLOBAL_BATCH}_mbsz${MICRO_BATCH}_z${ZERO_STAGE}_${DTYPE}_${SIZE_TAG}.log"
 
 while [[ $# -gt 0 ]]
 do
@@ -143,7 +145,7 @@ cat <<EOT > $CONFIG_JSON
   "steps_per_print": 1,
 
   "zero_optimization": {
-    "stage": $ZERO_STAGE,
+    "stage": $ZERO_STAGE
   },
 
   "bf16": {
@@ -159,7 +161,7 @@ cat <<EOT > $CONFIG_JSON
 EOT
 
 WORKER_STR="--num_nodes 1 --num_gpus $WORLD_SIZE"
-run_cmd="deepspeed --master_port 29700 $WORKER_STR ${DIR}/pretrain_gpt.py $@ ${options}"
+run_cmd="deepspeed --master_port 29700 $WORKER_STR ${DIR}/pretrain_gpt.py $@ ${options} 2>&1 | tee ${MEGATRON_LOG_FILE}"
 
 echo ${options}
 echo ${run_cmd}

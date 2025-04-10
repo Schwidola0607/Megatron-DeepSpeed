@@ -19,3 +19,7 @@ parser.add_argument("--use_sns", action='store_true', help="Use the SNS library 
 parser.add_argument("--csv_name", required=False, default="", type=str, help="Unique name for CSV files")
 parser.add_argument("--plot_only", action='store_true', help="Plot only using csv files")
 parser.add_argument("--csv_dir", required=False, type=str, help="Directory for csv files")
+parser.add_argument('--start_iteration', 
+                    type=int,
+                    default=0,
+                    help='Starting iteration for plotting loss curves')

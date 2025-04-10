@@ -65,7 +65,6 @@ def get_plot_name(base_name, params):
     return f"{base}_z{params['zero_stage']}_tp{params['tp']}_pp{params['pp']}_dp{params['dp']}_sp{params['sp']}_mbsz{params['mbsz']}{ext}"
 
 def main():
-    # Create dated output directory
     current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = os.path.join("data", current_time)
     os.makedirs(output_dir, exist_ok=True)
@@ -74,19 +73,26 @@ def main():
     tb_log_paths = find_files_prefix(args.tb_dir, target_prefix)
     print(f"Found {len(tb_log_paths)} matching files")
     print(tb_log_paths)
+    
+    if len(tb_log_paths) > 2:
+        print(f"WARNING: Found {len(tb_log_paths)} files, but only expecting 2. Additional files may affect results.")
+    
     analyzer = get_analyzer(args.analyzer)
 
-    for tb_path in tb_log_paths:
+    for i, tb_path in enumerate(tb_log_paths):
         print(f"Processing: {tb_path}")
         try:
             analyzer.set_names(tb_path)
 
             event_accumulator = EventAccumulator(tb_path)
             event_accumulator.Reload()
-
+            
+            # Check number of events and shift the one with 100 entries
             events = event_accumulator.Scalars(args.tb_event_key)
+            is_shorter_line = len(events) <= 100
+            start_iter = args.start_iteration if is_shorter_line else 0
 
-            x = [x.step for x in events]
+            x = [x.step + start_iter for x in events]
             y = [x.value for x in events]
 
             label = analyzer.get_label_name()
@@ -98,7 +104,7 @@ def main():
             if not args.skip_csv:
                 df = pd.DataFrame({"step": x, "value": y})
                 csv_filename = os.path.join(output_dir, 
-                    f"{args.csv_name}{analyzer.get_csv_filename()}_z{params['zero_stage']}_tp{params['tp']}_pp{params['pp']}_dp{params['dp']}_sp{params['sp']}_mbsz{params['mbsz']}.csv")
+                    f"{args.csv_name}_z{params['zero_stage']}_tp{params['tp']}_pp{params['pp']}_dp{params['dp']}_sp{params['sp']}_mbsz{params['mbsz']}.csv")
                 df.to_csv(csv_filename)
         except Exception as e:
             print(f"Error processing {tb_path}: {str(e)}")

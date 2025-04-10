@@ -31,12 +31,12 @@ if [[ $DEBUG_MODE == 1 ]]; then
         LAYERS=4
         HIDDEN=512
         SEQ=512
-        SIZE_TAG="gpt-117m"
+        SIZE_TAG="toy"
 else
         LAYERS=48
         HIDDEN=1024
         SEQ=1024
-        SIZE_TAG="gpt-1.5b"
+        SIZE_TAG="big"
 fi  # Add this missing 'fi' to close the if statement
 
 # 3D parallelism of training 
@@ -166,7 +166,6 @@ EOT
 WORKER_STR="--num_nodes 1 --num_gpus $WORLD_SIZE"
 run_cmd="deepspeed --master_port 29700 $WORKER_STR ${DIR}/pretrain_gpt.py $@ ${options} 2>&1 | tee ${MEGATRON_LOG_FILE}"
 
-echo "Logging output to: ${MEGATRON_LOG_FILE}"
 echo ${options}
 echo ${run_cmd}
 eval ${run_cmd}
